@@ -1,15 +1,66 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>PRTG Map (iframe)</title>
+  <meta charset="utf-8" />
+  <title>PRTG Map Wrapper</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #toolbar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+    }
+    #toolbar button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #333;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #toolbar button:hover {
+      background: #555;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+  </style>
 </head>
 <body>
-  <iframe 
-    width="1800" 
-    height="1200" 
-    frameborder="1"
-    src="https://iappiapwinf01/public/mapshow.htm?id=21498&mapid=8F607973-1636-46AD-B82E-B84A057833AE">
+  <div id="toolbar">
+    <button id="backBtn">⬅ Back</button>
+  </div>
+
+  <iframe
+    id="mapFrame"
+    src="https://iappiapwinf01/public/mapshow.htm?id=21498&mapid=8F607973-1636-46AD-B82E-B84A057833AE"
+    sandbox="allow-same-origin allow-scripts allow-forms">
   </iframe>
+
+  <script>
+    const MAP_URL = "https://iappiapwinf01/public/mapshow.htm?id=21498&mapid=8F607973-1636-46AD-B82E-B84A057833AE";
+    const frame = document.getElementById("mapFrame");
+    const backBtn = document.getElementById("backBtn");
+
+    backBtn.addEventListener("click", () => {
+      frame.src = MAP_URL;
+    });
+
+    // Optional keyboard shortcut: press "b" to go back
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "b") {
+        frame.src = MAP_URL;
+      }
+    });
+  </script>
 </body>
 </html>
