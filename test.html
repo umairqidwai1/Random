@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PRTG Map Kiosk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --ui-bg: #0b0d12;
+      --ui-btn: #1f2937;
+      --ui-fg: #ffffff;
+    }
+    html, body { height: 100%; margin: 0; background: var(--ui-bg); }
+    #frame { position: absolute; inset: 0; border: 0; width: 100%; height: 100%; }
+    #bar {
+      position: fixed; top: 12px; right: 12px; display: flex; gap: 8px;
+      z-index: 99999; pointer-events: auto;
+    }
+    .btn {
+      font: 14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer;
+      background: var(--ui-btn); color: var(--ui-fg);
+      box-shadow: 0 2px 10px rgba(0,0,0,.25); opacity: .92;
+    }
+    .btn:hover { opacity: 1 }
+    #toast {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: #111827; color: #fff; padding: 8px 12px; border-radius: 8px;
+      font: 12px/1.2 system-ui; opacity: 0; transition: opacity .25s; z-index: 99999;
+    }
+    #toast.show { opacity: .92 }
+  </style>
+</head>
+<body>
+  <!-- Control bar (always visible) -->
+  <div id="bar" aria-label="Controls">
+    <button id="back"  class="btn" title="Back to main map">⬅ Back to Map</button>
+    <button id="home"  class="btn" title="Reload main map">⟳ Reload Map</button>
+  </div>
+
+  <!-- IMPORTANT: sandbox keeps all navigation inside the iframe -->
+  <iframe
+    id="frame"
+    name="prtgframe"
+    src="YOUR_MAP_URL"
+    sandbox="allow-same-origin allow-scripts allow-forms"
+    allow="fullscreen"
+    referrerpolicy="no-referrer-when-downgrade"
+  ></iframe>
+
+  <div id="toast">Returning to map…</div>
+
+  <script>
+    // ==== Configure here ====
+    const MAP_URL    = "YOUR_MAP_URL";  // e.g. https://prtg-server/mapshow.htm?id=1234
+    const IDLE_MS    = 60000;           // auto-return after 60s of no interaction
+    const FIRST_RETRY_MS = 3000;        // retry initial load after 3s if needed
+    // ========================
+
+    const frame = document.getElementById('frame');
+    const toast = document.getElementById('toast');
+
+    // Buttons
+    document.getElementById('back').onclick = () => goHome(true);
+    document.getElementById('home').onclick = () => goHome(true);
+
+    // Auto-return on inactivity
+    let idleTimer;
+    const resetIdle = () => { clearTimeout(idleTimer); idleTimer = setTimeout(goHome, IDLE_MS); };
+    ['click','touchstart','mousemove','keydown'].forEach(evt =>
+      window.addEventListener(evt, resetIdle, { passive: true })
+    );
+    resetIdle();
+
+    function goHome(showToast=false) {
+      if (showToast) {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1200);
+      }
+      // Force back to map inside the iframe
+      if (frame.src !== MAP_URL) frame.src = MAP_URL;
+      // Also reset idle timer
+      resetIdle();
+    }
+
+    // First-load helper: if nothing has painted after a short delay (e.g., DNS/cert/redirect hiccup),
+    // gently reassign the src once to kick it. Harmless if already loaded.
+    let firstRetryDone = false;
+    setTimeout(() => {
+      if (!firstRetryDone) {
+        try {
+          // We can't read frame contents cross-origin, so just nudge the src again
+          const current = frame.src;
+          if (!current || current === 'about:blank') frame.src = MAP_URL;
+          firstRetryDone = true;
+        } catch (_) {
+          // ignore
+        }
+      }
+    }, FIRST_RETRY_MS);
+
+    // Optional: periodic safety snap-back (every 5 minutes)
+    // setInterval(() => { if (!frame.src.includes('mapshow.htm')) frame.src = MAP_URL; }, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
